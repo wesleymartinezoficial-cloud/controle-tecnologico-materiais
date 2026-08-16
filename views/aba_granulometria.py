@@ -1,5 +1,5 @@
-import matplotlib.pyplot as plt
 import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
 from core.granulometria import calcular_material_pulverulento, processar_granulometria
 
@@ -64,10 +64,34 @@ def render():
         m2.metric("Erro de Perda", f"{res['erro']:.2f}%", delta="✓ Aprovado" if res["erro"] <= 1.0 else "❌ Reprovado (>1%)")
         m3.metric("Módulo de Finura (MF)", f"{res['mf']:.2f}", f"DMC: {res['dmc'] if res['dmc'] else 'N/I'} mm")
 
-        fig, ax = plt.subplots(figsize=(8, 3))
-        ax.plot(res["df_resultado"]["Abertura (mm)"], res["df_resultado"]["Passante (%)"], marker="o", color="#005580", linewidth=2)
-        ax.set_xscale("log")
-        ax.invert_xaxis()
-        ax.set_title(f"Curva Granulométrica - {tipo}")
-        ax.grid(True, which="both", linestyle="--", alpha=0.5)
-        st.pyplot(fig)
+        # ----------------------------------------------------------------------
+        # GRÁFICO INTERATIVO COM PLOTLY
+        # ----------------------------------------------------------------------
+        df_res = res["df_resultado"]
+        fig = go.Figure()
+
+        # Curva de Ensaio
+        fig.add_trace(go.Scatter(
+            x=df_res["Abertura (mm)"],
+            y=df_res["Passante (%)"],
+            mode='lines+markers',
+            name='Amostra Ensaiada',
+            line=dict(color='#005580', width=3),
+            marker=dict(size=8)
+        ))
+
+        # Ajustes Visuais e Escala Logarítmica Granulométrica
+        fig.update_layout(
+            title=f"Curva Granulométrica Interativa - {tipo}",
+            xaxis=dict(
+                title="Abertura das Peneiras (mm) [Escala Log]",
+                type="log",
+                autorange="reversed"  # Inverte o eixo conforme convenção de solos/agregados
+            ),
+            yaxis=dict(title="Porcentagem Passante Acumulada (%)", range=[0, 105]),
+            template="plotly_white",
+            hovermode="x unified",
+            margin=dict(l=40, r=40, t=50, b=40)
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
