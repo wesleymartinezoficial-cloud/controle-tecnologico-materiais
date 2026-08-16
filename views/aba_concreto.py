@@ -3,23 +3,24 @@ import streamlit as st
 from core.concreto import calcular_fck_estimado
 
 def render():
-    st.subheader("Avaliação Estatística da Resistência do Concreto (NBR 12655)")
+    st.subheader("Resistência à Compressão e Validação de Lote (fck,est)")
+    c_cp1, c_cp2, c_cp3 = st.columns(3)
+    with c_cp1:
+        d = st.number_input("Diâmetro do CP (cm)", value=10.0)
+    with c_cp2:
+        h = st.number_input("Altura do CP (cm)", value=20.0)
+    with c_cp3:
+        idade = st.text_input("Idade (dias)", value="28")
 
-    col1, col2 = st.columns(2)
-    with col1:
-        d_cp = st.number_input("Diâmetro do CP (cm)", value=10.0)
-    with col2:
-        h_cp = st.number_input("Altura do CP (cm)", value=20.0)
+    st.write("**Resultados de Ruptura dos CPs:**")
+    df_cps = pd.DataFrame({"CP": ["CP-01", "CP-02", "CP-03", "CP-04", "CP-05"], "Carga (kN)": [240.0, 255.0, 248.0, 260.0, 242.0]})
+    df_cps_edit = st.data_editor(df_cps, num_rows="dynamic", use_container_width=True, hide_index=True)
 
-    df_cps = pd.DataFrame({"CP": ["CP-1", "CP-2", "CP-3", "CP-4"], "Carga (kN)": [245.0, 252.0, 238.0, 260.0]})
-    df_edit = st.data_editor(df_cps, num_rows="dynamic", use_container_width=True, hide_index=True)
-
-    if st.button("💥 Calcular fck Estimado", use_container_width=True):
-        cargas = df_edit["Carga (kN)"].tolist()
-        res = calcular_fck_estimado(cargas, d_cp)
-
+    if st.button("💥 Processar Lote e Calcular fck,est", use_container_width=True):
+        res = calcular_fck_estimado(df_cps_edit, d)
         if res:
-            r1, r2, r3 = st.columns(3)
-            r1.metric("Resistência Média (fc,m)", f"{res['fc_m']:.2f} MPa")
-            r2.metric("fck Estimado", f"{res['fck_est']:.2f} MPa")
-            r3.metric("Área da Seção", f"{res['area_cm2']:.2f} cm²")
+            st.dataframe(res["df_resultado"], use_container_width=True)
+            k1, k2, k3 = st.columns(3)
+            k1.metric("Resistência Média (fc,m)", f"{res['fc_m']:.2f} MPa")
+            k2.metric("fck Estimado (NBR 12655)", f"{res['fck_est']:.2f} MPa")
+            k3.metric("Menor Valor (f1)", f"{res['f1']:.2f} MPa")
